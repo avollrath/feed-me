@@ -1,32 +1,66 @@
-# React + TypeScript + Vite
+# Feed Me
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Feed Me is a local-first RSS reader built with React, TypeScript, Vite, Tailwind CSS, Zustand, and an Express RSS proxy. Feeds render as draggable, resizable cards in a 12-column dashboard. Settings, card layout, cached articles, and display preferences persist in localStorage.
 
-Currently, two official plugins are available:
+## Screenshot
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![Feed Me screenshot placeholder](./docs/screenshot-placeholder.svg)
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+
+- npm
 
-## Expanding the Oxlint configuration
+## Setup
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Install root dependencies:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Install server dependencies:
+
+```bash
+npm install --prefix server
+```
+
+Start the Vite app and Express proxy together:
+
+```bash
+npm run dev
+```
+
+The app runs at `http://localhost:5173`. The RSS proxy runs at `http://localhost:3001`.
+
+## Adding Feeds
+
+Open settings with the gear button, enter an RSS or Atom URL, add an optional label, then submit. Feed Me validates the URL through the backend proxy before saving it. Each saved feed can be enabled, disabled, edited, deleted, and configured with image visibility, article count, refresh interval, and card accent color.
+
+## Tech Stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS v3, Inter |
+| Layout | react-grid-layout |
+| State | Zustand with localStorage persistence |
+| Icons | lucide-react |
+| Backend | Node.js, Express |
+| RSS Parsing | rss-parser |
+| Dev Runner | concurrently |
+
+## Scripts
+
+```bash
+npm run dev      # Start Vite and the RSS proxy
+npm run build    # Build the frontend
+npm run preview  # Preview production frontend build
+```
+
+Server-only commands:
+
+```bash
+npm run dev --prefix server
+npm run build --prefix server
+```

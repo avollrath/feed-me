@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Feed Me screenshot placeholder</title>
+  <desc id="desc">Dark dashboard placeholder for Feed Me.</desc>
+  <rect width="1280" height="720" fill="#0f0f0f"/>
+  <rect x="48" y="48" width="1184" height="72" rx="8" fill="#1a1a1a" stroke="#2a2a2a"/>
+  <text x="80" y="94" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">Feed Me</text>
+  <g fill="#1a1a1a" stroke="#2a2a2a">
+    <rect x="48" y="152" width="368" height="464" rx="8"/>
+    <rect x="456" y="152" width="368" height="464" rx="8"/>
+    <rect x="864" y="152" width="368" height="464" rx="8"/>
+  </g>
+  <g fill="#7c3aed">
+    <rect x="48" y="152" width="368" height="4"/>
+    <rect x="456" y="152" width="368" height="4"/>
+    <rect x="864" y="152" width="368" height="4"/>
+  </g>
+  <text x="640" y="666" text-anchor="middle" fill="#71717a" font-family="Inter, Arial, sans-serif" font-size="20">Screenshot placeholder</text>
+</svg>
