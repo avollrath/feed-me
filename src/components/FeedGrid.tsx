@@ -7,6 +7,8 @@ type FeedGridProps = {
   onRefreshFeed: (feed: FeedSource) => void;
 };
 
+type ResizeDirection = 'n' | 'e' | 's' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
 type Interaction =
   | {
       type: 'drag';
@@ -19,7 +21,7 @@ type Interaction =
   | {
       type: 'resize';
       id: string;
-      direction: 'e' | 's' | 'se';
+      direction: ResizeDirection;
       startX: number;
       startY: number;
       origin: GridLayout[number];
@@ -80,16 +82,16 @@ export function FeedGrid({ onRefreshFeed }: FeedGridProps) {
       const origin = interaction.origin;
       const nextItem =
         interaction.type === 'drag'
-          ? {
-              ...origin,
-              x: clamp(origin.x + columnDelta, 0, cols - origin.w),
-              y: Math.max(0, origin.y + rowDelta),
-            }
-          : {
-              ...origin,
-              w: interaction.direction.includes('e') ? clamp(origin.w + columnDelta, origin.minW ?? 2, cols - origin.x) : origin.w,
-              h: interaction.direction.includes('s') ? Math.max(origin.minH ?? 5, origin.h + rowDelta) : origin.h,
-            };
+          ? fitDraggedItem(
+              {
+                ...origin,
+                x: clamp(origin.x + columnDelta, 0, cols - origin.w),
+                y: Math.max(0, origin.y + rowDelta),
+              },
+              interaction.startLayout.filter((item) => item.i !== interaction.id),
+              cols,
+            )
+          : resizeItem(origin, interaction.direction, columnDelta, rowDelta, cols);
 
       const nextLayout =
         interaction.type === 'drag'
@@ -125,7 +127,7 @@ export function FeedGrid({ onRefreshFeed }: FeedGridProps) {
     setInteraction({ type: 'drag', id, startX: event.clientX, startY: event.clientY, origin: item, startLayout: activeLayout });
   }
 
-  function startResize(event: ReactPointerEvent<HTMLButtonElement>, id: string, direction: 'e' | 's' | 'se') {
+  function startResize(event: ReactPointerEvent<HTMLButtonElement>, id: string, direction: ResizeDirection) {
     if (isMobile || event.button !== 0) {
       return;
     }
@@ -168,9 +170,14 @@ export function FeedGrid({ onRefreshFeed }: FeedGridProps) {
               <FeedCard feed={feed} columns={item.w} onRefresh={onRefreshFeed} />
               {!isMobile ? (
                 <>
+                  <button type="button" className="feed-card-resize-handle feed-card-resize-n" aria-label={`Resize ${feed.label} upward`} onPointerDown={(event) => startResize(event, feed.id, 'n')} />
                   <button type="button" className="feed-card-resize-handle feed-card-resize-e" aria-label={`Resize ${feed.label} wider`} onPointerDown={(event) => startResize(event, feed.id, 'e')} />
                   <button type="button" className="feed-card-resize-handle feed-card-resize-s" aria-label={`Resize ${feed.label} taller`} onPointerDown={(event) => startResize(event, feed.id, 's')} />
+                  <button type="button" className="feed-card-resize-handle feed-card-resize-w" aria-label={`Resize ${feed.label} narrower`} onPointerDown={(event) => startResize(event, feed.id, 'w')} />
+                  <button type="button" className="feed-card-resize-handle feed-card-resize-ne" aria-label={`Resize ${feed.label}`} onPointerDown={(event) => startResize(event, feed.id, 'ne')} />
+                  <button type="button" className="feed-card-resize-handle feed-card-resize-nw" aria-label={`Resize ${feed.label}`} onPointerDown={(event) => startResize(event, feed.id, 'nw')} />
                   <button type="button" className="feed-card-resize-handle feed-card-resize-se" aria-label={`Resize ${feed.label}`} onPointerDown={(event) => startResize(event, feed.id, 'se')} />
+                  <button type="button" className="feed-card-resize-handle feed-card-resize-sw" aria-label={`Resize ${feed.label}`} onPointerDown={(event) => startResize(event, feed.id, 'sw')} />
                 </>
               ) : null}
             </div>
@@ -213,6 +220,45 @@ function arrangeLayout(layout: GridLayout, priorityId?: string): GridLayout {
   }
 
   return layout.map((item) => placed.find((placedItem) => placedItem.i === item.i) ?? item);
+}
+
+function fitDraggedItem(item: GridLayout[number], others: GridLayout, cols: number): GridLayout[number] {
+  let fitted = { ...item };
+
+  while (fitted.w > (fitted.minW ?? 2) && others.some((other) => overlaps(fitted, other))) {
+    fitted = { ...fitted, w: fitted.w - 1 };
+    fitted.x = clamp(fitted.x, 0, cols - fitted.w);
+  }
+
+  return fitted;
+}
+
+function resizeItem(item: GridLayout[number], direction: ResizeDirection, columnDelta: number, rowDelta: number, cols: number): GridLayout[number] {
+  const minW = item.minW ?? 2;
+  const minH = item.minH ?? 5;
+  let { x, y, w, h } = item;
+
+  if (direction.includes('e')) {
+    w = clamp(item.w + columnDelta, minW, cols - item.x);
+  }
+
+  if (direction.includes('s')) {
+    h = Math.max(minH, item.h + rowDelta);
+  }
+
+  if (direction.includes('w')) {
+    const maxX = item.x + item.w - minW;
+    x = clamp(item.x + columnDelta, 0, maxX);
+    w = item.w + item.x - x;
+  }
+
+  if (direction.includes('n')) {
+    const maxY = item.y + item.h - minH;
+    y = clamp(item.y + rowDelta, 0, maxY);
+    h = item.h + item.y - y;
+  }
+
+  return { ...item, x, y, w, h };
 }
 
 function resolveDragSwitch(layout: GridLayout, draggedItem: GridLayout[number], origin: GridLayout[number]): GridLayout {
