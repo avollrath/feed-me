@@ -1,0 +1,51 @@
+import { ExternalLink } from 'lucide-react';
+import clsx from 'clsx';
+import type { FeedArticle, FeedSource } from '../types';
+
+type ArticleItemProps = {
+  article: FeedArticle;
+  feed: FeedSource;
+  density: 'compact' | 'comfortable';
+};
+
+export function ArticleItem({ article, feed, density }: ArticleItemProps) {
+  const showImage = feed.showImages && article.image;
+
+  return (
+    <article className={clsx('group flex min-w-0 gap-3 rounded-md border border-transparent transition hover:border-zinc-700 hover:bg-white/[0.03]', density === 'compact' ? 'p-2' : 'p-3')}>
+      {showImage ? (
+        <img src={article.image ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-md object-cover" loading="lazy" referrerPolicy="no-referrer" />
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <a href={article.link} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-sm font-medium leading-snug text-zinc-100 hover:text-violet-300">
+          <span className="line-clamp-2">{article.title}</span>
+          <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
+        </a>
+        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-500">
+          {article.author ? <span className="truncate">{article.author}</span> : null}
+          {article.pubDate ? <time dateTime={article.pubDate}>{relativeTime(article.pubDate)}</time> : null}
+        </div>
+        {density === 'comfortable' && article.summary ? <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">{article.summary}</p> : null}
+      </div>
+    </article>
+  );
+}
+
+function relativeTime(value: string): string {
+  const diff = Date.now() - Date.parse(value);
+  if (!Number.isFinite(diff)) {
+    return '';
+  }
+
+  const minutes = Math.max(1, Math.round(diff / 60_000));
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) {
+    return `${hours}h ago`;
+  }
+
+  return `${Math.round(hours / 24)}d ago`;
+}

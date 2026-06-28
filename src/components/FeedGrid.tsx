@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { GridLayout, useContainerWidth, type Layout } from 'react-grid-layout';
+import { FeedCard } from './FeedCard';
 import { useFeedStore } from '../store/feedStore';
+import type { FeedSource } from '../types';
 
 export function FeedGrid() {
   const feeds = useFeedStore((state) => state.feeds);
@@ -33,6 +35,10 @@ export function FeedGrid() {
     }
   }
 
+  function handleRefresh(_feed: FeedSource) {
+    return undefined;
+  }
+
   return (
     <div ref={containerRef} className="mx-auto max-w-7xl px-2 py-4 md:px-4">
       {mounted ? (
@@ -46,14 +52,8 @@ export function FeedGrid() {
           onLayoutChange={handleLayoutChange}
         >
           {enabledFeeds.map((feed) => (
-            <div key={feed.id} className="overflow-hidden rounded-lg border border-feed-border bg-feed-card shadow-xl shadow-black/20">
-              <div className="flex h-full min-h-0 flex-col">
-                <div className="border-b border-feed-border px-4 py-3" style={{ borderTop: `3px solid ${feed.accentColor}` }}>
-                  <div className="truncate text-sm font-semibold text-white">{feed.label}</div>
-                  <div className="mt-1 truncate text-xs text-zinc-500">{feed.url}</div>
-                </div>
-                <div className="grid flex-1 place-items-center px-4 text-sm text-zinc-500">Feed card loading in next step</div>
-              </div>
+            <div key={feed.id}>
+              <FeedCard feed={feed} columns={activeLayout.find((item) => item.i === feed.id)?.w ?? 4} onRefresh={handleRefresh} />
             </div>
           ))}
         </GridLayout>
