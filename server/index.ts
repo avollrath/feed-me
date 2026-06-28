@@ -52,6 +52,7 @@ app.get('/api/feed', async (req, res) => {
         pubDate: normalizeDate(item.isoDate ?? item.pubDate),
         author: item.creator ?? item.author ?? null,
         image: extractImage(item),
+        price: extractPrice(item),
         summary: stripHtml(item.contentSnippet ?? item.summary ?? item.content ?? item['content:encoded'] ?? '').slice(0, 500),
       })),
     });
@@ -185,10 +186,17 @@ function extractWikipediaOnThisDayEntries(summary: string, fallbackLink: string,
       isoDate: pubDate,
       author: 'Wikipedia',
       image: extractImageFromHtml(entryHtml),
+      price: null,
       summary: text,
       guid: `${fallbackLink}#event-${index}`,
     };
   });
+}
+
+function extractPrice(item: ParserItem): string | null {
+  const text = stripHtml(`${item.title ?? ''} ${item.contentSnippet ?? ''} ${item.summary ?? ''} ${item.content ?? ''}`);
+  const match = text.match(/(?:^|\s)(\d{1,5}(?:[.,]\d{2})?\s?(?:€|EUR|\$|£))(?:\s|$)/i);
+  return match?.[1]?.replace(/\s+/g, ' ') ?? null;
 }
 
 function extractImage(item: ParserItem): string | null {

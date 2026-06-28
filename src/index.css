@@ -25,3 +25,17 @@ input,
 select {
   font: inherit;
 }
+
+.react-grid-item.react-grid-placeholder {
+  background: #7c3aed;
+  border-radius: 8px;
+  opacity: 0.18;
+}
+
+.react-resizable-handle {
+  opacity: 0.75;
+}
+
+.react-resizable-handle::after {
+  border-color: rgba(167, 139, 250, 0.9);
+}

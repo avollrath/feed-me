@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FeedData, FeedRuntime, FeedSource, GlobalSettings, GridLayout, RefreshInterval } from '../types';
+import type { FeedData, FeedDisplayOptions, FeedRuntime, FeedSource, GlobalSettings, GridLayout, RefreshInterval } from '../types';
+
+export const defaultDisplayOptions: FeedDisplayOptions = {
+  title: true,
+  description: true,
+  image: true,
+  author: true,
+  time: true,
+  price: true,
+};
 
 const defaultFeeds: FeedSource[] = [
   {
@@ -9,6 +18,7 @@ const defaultFeeds: FeedSource[] = [
     url: 'https://de.wikipedia.org/w/api.php?action=featuredfeed&feed=onthisday&feedformat=atom',
     enabled: true,
     showImages: true,
+    displayOptions: defaultDisplayOptions,
     articleLimit: 10,
     refreshInterval: 15,
     accentColor: '#7c3aed',
@@ -19,6 +29,7 @@ const defaultFeeds: FeedSource[] = [
     url: 'http://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html',
     enabled: true,
     showImages: true,
+    displayOptions: defaultDisplayOptions,
     articleLimit: 10,
     refreshInterval: 15,
     accentColor: '#dc2626',
@@ -29,6 +40,7 @@ const defaultFeeds: FeedSource[] = [
     url: 'https://www.mydealz.de/rss/deals',
     enabled: true,
     showImages: true,
+    displayOptions: defaultDisplayOptions,
     articleLimit: 10,
     refreshInterval: 15,
     accentColor: '#f97316',
@@ -39,6 +51,7 @@ const defaultFeeds: FeedSource[] = [
     url: 'https://www.reddit.com/.rss',
     enabled: true,
     showImages: true,
+    displayOptions: defaultDisplayOptions,
     articleLimit: 10,
     refreshInterval: 30,
     accentColor: '#ff4500',
@@ -49,6 +62,7 @@ const defaultFeeds: FeedSource[] = [
     url: 'https://makezine.com/feed/',
     enabled: true,
     showImages: true,
+    displayOptions: defaultDisplayOptions,
     articleLimit: 10,
     refreshInterval: 30,
     accentColor: '#0ea5e9',
@@ -99,6 +113,7 @@ export const useFeedStore = create<PersistedFeedState>()(
           url: feed.url.trim(),
           enabled: true,
           showImages: true,
+          displayOptions: defaultDisplayOptions,
           articleLimit: get().settings.defaultArticleLimit,
           refreshInterval: 15,
           accentColor: '#7c3aed',

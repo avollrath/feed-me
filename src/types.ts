@@ -10,9 +10,19 @@ export type FeedSource = {
   url: string;
   enabled: boolean;
   showImages: boolean;
+  displayOptions: FeedDisplayOptions;
   articleLimit: number;
   refreshInterval: RefreshInterval;
   accentColor: string;
+};
+
+export type FeedDisplayOptions = {
+  title: boolean;
+  description: boolean;
+  image: boolean;
+  author: boolean;
+  time: boolean;
+  price: boolean;
 };
 
 export type FeedArticle = {
@@ -21,6 +31,7 @@ export type FeedArticle = {
   pubDate: string | null;
   author: string | null;
   image: string | null;
+  price: string | null;
   summary: string;
 };
 

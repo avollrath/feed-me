@@ -1,8 +1,9 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Settings } from 'lucide-react';
 import clsx from 'clsx';
+import { useState } from 'react';
 import { ArticleItem } from './ArticleItem';
-import { useFeedStore } from '../store/feedStore';
-import type { FeedSource } from '../types';
+import { defaultDisplayOptions, useFeedStore } from '../store/feedStore';
+import type { FeedDisplayOptions, FeedSource } from '../types';
 
 type FeedCardProps = {
   feed: FeedSource;
@@ -11,15 +12,27 @@ type FeedCardProps = {
 };
 
 export function FeedCard({ feed, columns, onRefresh }: FeedCardProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const runtime = useFeedStore((state) => state.runtime[feed.id]);
   const density = useFeedStore((state) => state.settings.density);
+  const updateFeed = useFeedStore((state) => state.updateFeed);
   const items = runtime?.data?.items ?? [];
   const favicon = faviconUrl(runtime?.data?.link ?? feed.url);
   const lastFetched = runtime?.lastFetched ? relativeTime(runtime.lastFetched) : 'Never';
+  const displayOptions = { ...defaultDisplayOptions, ...feed.displayOptions };
+
+  function updateDisplayOption(option: keyof FeedDisplayOptions, value: boolean) {
+    updateFeed(feed.id, {
+      displayOptions: {
+        ...displayOptions,
+        [option]: value,
+      },
+    });
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-feed-border bg-feed-card shadow-xl shadow-black/20">
-      <header className="shrink-0 border-b border-feed-border px-4 py-3" style={{ borderTop: `3px solid ${feed.accentColor}` }}>
+      <header className="feed-card-drag-handle shrink-0 cursor-move border-b border-feed-border px-4 py-3" style={{ borderTop: `3px solid ${feed.accentColor}` }}>
         <div className="flex min-w-0 items-center gap-3">
           <img src={favicon} alt="" className="h-5 w-5 shrink-0 rounded-sm" loading="lazy" />
           <div className="min-w-0 flex-1">
@@ -29,6 +42,28 @@ export function FeedCard({ feed, columns, onRefresh }: FeedCardProps) {
               {runtime?.stale ? <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">Stale</span> : null}
             </div>
             <div className="mt-1 text-xs text-zinc-500">Updated {lastFetched}</div>
+          </div>
+          <div className="feed-card-settings relative">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((open) => !open)}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 text-zinc-300 transition hover:border-violet-500 hover:text-white"
+              aria-label={`Settings for ${feed.label}`}
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            {settingsOpen ? (
+              <div className="absolute right-0 top-10 z-20 w-56 rounded-lg border border-feed-border bg-zinc-950 p-3 shadow-2xl shadow-black/50">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-zinc-500">Display</div>
+                <DisplayToggle label="Title" checked={displayOptions.title} onChange={(value) => updateDisplayOption('title', value)} />
+                <DisplayToggle label="Description" checked={displayOptions.description} onChange={(value) => updateDisplayOption('description', value)} />
+                <DisplayToggle label="Image" checked={displayOptions.image} onChange={(value) => updateDisplayOption('image', value)} />
+                <DisplayToggle label="Author / user" checked={displayOptions.author} onChange={(value) => updateDisplayOption('author', value)} />
+                <DisplayToggle label="Time posted" checked={displayOptions.time} onChange={(value) => updateDisplayOption('time', value)} />
+                <DisplayToggle label="Price" checked={displayOptions.price} onChange={(value) => updateDisplayOption('price', value)} />
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -67,6 +102,15 @@ export function FeedCard({ feed, columns, onRefresh }: FeedCardProps) {
         ) : null}
       </div>
     </section>
+  );
+}
+
+function DisplayToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 py-1.5 text-sm text-zinc-300">
+      <span>{label}</span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-violet-600" />
+    </label>
   );
 }
 
