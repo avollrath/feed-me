@@ -57,7 +57,7 @@ export function FeedCard({ feed, columns, onRefresh }: FeedCardProps) {
           </div>
         ) : null}
         {items.length ? (
-          <div className={clsx('grid gap-1', columns >= 4 ? 'md:grid-cols-2' : 'grid-cols-1')}>
+          <div className={clsx('grid gap-2', columns >= 7 ? 'xl:grid-cols-2' : 'grid-cols-1')}>
             {items.map((article) => (
               <ArticleItem key={`${article.link}-${article.title}`} article={article} feed={feed} density={density} />
             ))}

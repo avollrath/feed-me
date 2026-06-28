@@ -12,20 +12,20 @@ export function ArticleItem({ article, feed, density }: ArticleItemProps) {
   const showImage = feed.showImages && article.image;
 
   return (
-    <article className={clsx('group flex min-w-0 gap-3 rounded-md border border-transparent transition hover:border-zinc-700 hover:bg-white/[0.03]', density === 'compact' ? 'p-2' : 'p-3')}>
+    <article className={clsx('group flex min-w-0 gap-4 rounded-md border border-transparent transition hover:border-zinc-700 hover:bg-white/[0.03]', density === 'compact' ? 'p-3' : 'p-4')}>
       {showImage ? (
-        <img src={article.image ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-md object-cover" loading="lazy" referrerPolicy="no-referrer" />
+        <img src={article.image ?? ''} alt="" className="h-24 w-24 shrink-0 rounded-md object-cover" loading="lazy" referrerPolicy="no-referrer" />
       ) : null}
       <div className="min-w-0 flex-1">
-        <a href={article.link} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-sm font-medium leading-snug text-zinc-100 hover:text-violet-300">
-          <span className="line-clamp-2">{article.title}</span>
+        <a href={article.link} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-base font-semibold leading-snug text-zinc-100 hover:text-violet-300">
+          <span className="line-clamp-3">{article.title}</span>
           <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
         </a>
         <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-500">
           {article.author ? <span className="truncate">{article.author}</span> : null}
           {article.pubDate ? <time dateTime={article.pubDate}>{relativeTime(article.pubDate)}</time> : null}
         </div>
-        {density === 'comfortable' && article.summary ? <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">{article.summary}</p> : null}
+        {density === 'comfortable' && article.summary ? <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-zinc-400">{article.summary}</p> : null}
       </div>
     </article>
   );

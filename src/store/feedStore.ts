@@ -75,9 +75,9 @@ const initialLayout: GridLayout = defaultFeeds.map((feed, index) => ({
   x: (index % 3) * 4,
   y: Math.floor(index / 3) * 8,
   w: 4,
-  h: 8,
+  h: 10,
   minW: 2,
-  minH: 4,
+  minH: 5,
 }));
 
 export const useFeedStore = create<PersistedFeedState>()(
@@ -111,11 +111,11 @@ export const useFeedStore = create<PersistedFeedState>()(
             {
               i: source.id,
               x: (state.feeds.length % 3) * 4,
-              y: Math.floor(state.feeds.length / 3) * 8,
+              y: Math.floor(state.feeds.length / 3) * 10,
               w: 4,
-              h: 8,
+              h: 10,
               minW: 2,
-              minH: 4,
+              minH: 5,
             },
           ],
         }));

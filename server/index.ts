@@ -8,6 +8,7 @@ type ParserItem = Parser.Item & {
   'media:thumbnail'?: MediaValue;
   content?: string;
   'content:encoded'?: string;
+  summary?: string;
   creator?: string;
   author?: string;
   isoDate?: string;
@@ -19,7 +20,7 @@ const app = express();
 const port = 3001;
 const parser = new Parser<Record<string, unknown>, ParserItem>({
   customFields: {
-    item: ['media:content', 'media:thumbnail', 'content:encoded', 'creator'],
+    item: ['media:content', 'media:thumbnail', 'content:encoded', 'summary', 'creator'],
   },
 });
 
@@ -40,17 +41,18 @@ app.get('/api/feed', async (req, res) => {
 
   try {
     const feed = await parseFeed(url);
+    const items = normalizeItems(feed.items, feed.link ?? url.origin, url);
     res.json({
       title: feed.title ?? url.hostname,
       description: stripHtml(feed.description ?? '').slice(0, 300),
       link: feed.link ?? url.origin,
-      items: feed.items.slice(0, limit).map((item) => ({
+      items: items.slice(0, limit).map((item) => ({
         title: item.title ?? 'Untitled article',
         link: item.link ?? feed.link ?? url.toString(),
         pubDate: normalizeDate(item.isoDate ?? item.pubDate),
         author: item.creator ?? item.author ?? null,
         image: extractImage(item),
-        summary: stripHtml(item.contentSnippet ?? item.content ?? item['content:encoded'] ?? '').slice(0, 200),
+        summary: stripHtml(item.contentSnippet ?? item.summary ?? item.content ?? item['content:encoded'] ?? '').slice(0, 500),
       })),
     });
   } catch (error) {
@@ -134,6 +136,61 @@ function normalizeDate(value?: string): string | null {
   return Number.isNaN(timestamp) ? null : new Date(timestamp).toISOString();
 }
 
+function normalizeItems(items: ParserItem[], feedLink: string, feedUrl: URL): ParserItem[] {
+  if (!isWikipediaOnThisDayFeed(feedUrl)) {
+    return items;
+  }
+
+  const todaysItem = items.find((item) => isToday(item.isoDate ?? item.pubDate)) ?? items.at(-1);
+  if (!todaysItem?.summary) {
+    return todaysItem ? [todaysItem] : [];
+  }
+
+  const entries = extractWikipediaOnThisDayEntries(todaysItem.summary, todaysItem.link ?? feedLink, todaysItem.isoDate ?? todaysItem.pubDate);
+  return entries.length ? entries : [todaysItem];
+}
+
+function isWikipediaOnThisDayFeed(url: URL): boolean {
+  return url.hostname === 'de.wikipedia.org' && url.searchParams.get('feed') === 'onthisday';
+}
+
+function isToday(value?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
+}
+
+function extractWikipediaOnThisDayEntries(summary: string, fallbackLink: string, pubDate?: string): ParserItem[] {
+  const html = decodeHtml(summary);
+  const entries = [...html.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)];
+
+  return entries.map((entry, index) => {
+    const entryHtml = entry[1] ?? '';
+    const text = stripHtml(entryHtml);
+    const year = text.match(/^(\d{3,4})\s*[\u2013-]\s*/)?.[1];
+    const title = year ? `${year} - ${text.replace(/^\d{3,4}\s*[\u2013-]\s*/, '')}` : text;
+
+    return {
+      title: title.slice(0, 180),
+      link: extractWikipediaLink(entryHtml) ?? fallbackLink,
+      pubDate,
+      isoDate: pubDate,
+      author: 'Wikipedia',
+      image: extractImageFromHtml(entryHtml),
+      summary: text,
+      guid: `${fallbackLink}#event-${index}`,
+    };
+  });
+}
+
 function extractImage(item: ParserItem): string | null {
   if (item.enclosure?.url && (!item.enclosure.type || item.enclosure.type.startsWith('image/'))) {
     return item.enclosure.url;
@@ -155,8 +212,37 @@ function extractImage(item: ParserItem): string | null {
     return decodeHtml(ogImage[1]);
   }
 
+  return extractImageFromHtml(html);
+}
+
+function extractImageFromHtml(html: string): string | null {
   const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return img?.[1] ? decodeHtml(img[1]) : null;
+  if (!img?.[1]) {
+    return null;
+  }
+
+  return normalizeUrl(decodeHtml(img[1]), 'https://de.wikipedia.org');
+}
+
+function extractWikipediaLink(html: string): string | null {
+  const links = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>/gi)];
+  const link = links
+    .map((match) => decodeHtml(match[1] ?? ''))
+    .find((href) => href.startsWith('/wiki/') && !href.startsWith('/wiki/Datei:') && !/^\/wiki\/\d{3,4}$/.test(href));
+
+  return link ? normalizeUrl(link, 'https://de.wikipedia.org') : null;
+}
+
+function normalizeUrl(value: string, base: string): string {
+  if (value.startsWith('//')) {
+    return `https:${value}`;
+  }
+
+  try {
+    return new URL(value, base).toString();
+  } catch {
+    return value;
+  }
 }
 
 function getMediaUrl(value: MediaValue | undefined): string | null {
