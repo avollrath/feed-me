@@ -87,7 +87,7 @@ type PersistedFeedState = {
 const initialLayout: GridLayout = defaultFeeds.map((feed, index) => ({
   i: feed.id,
   x: (index % 3) * 4,
-  y: Math.floor(index / 3) * 8,
+  y: Math.floor(index / 3) * 10,
   w: 4,
   h: 10,
   minW: 2,
