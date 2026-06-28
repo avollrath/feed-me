@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useFeedStore } from '../store/feedStore';
+import type { RefreshInterval } from '../types';
 
 type SettingsProps = {
   open: boolean;
@@ -12,11 +13,14 @@ export function Settings({ open, onClose }: SettingsProps) {
   const addFeed = useFeedStore((state) => state.addFeed);
   const updateFeed = useFeedStore((state) => state.updateFeed);
   const deleteFeed = useFeedStore((state) => state.deleteFeed);
+  const settings = useFeedStore((state) => state.settings);
+  const updateSettings = useFeedStore((state) => state.updateSettings);
   const [url, setUrl] = useState('');
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [draft, setDraft] = useState({ label: '', url: '' });
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
@@ -98,6 +102,9 @@ export function Settings({ open, onClose }: SettingsProps) {
                         <div className="truncate text-sm font-medium text-white">{feed.label}</div>
                         <div className="mt-1 truncate text-xs text-zinc-500">{feed.url}</div>
                       </div>
+                      <button type="button" onClick={() => setExpandedId(expandedId === feed.id ? null : feed.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-700 text-zinc-300 hover:text-white" aria-label={`Options for ${feed.label}`}>
+                        <ChevronDown className={expandedId === feed.id ? 'h-3.5 w-3.5 rotate-180' : 'h-3.5 w-3.5'} />
+                      </button>
                       <button type="button" onClick={() => startEdit(feed.id, feed.label, feed.url)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-700 text-zinc-300 hover:text-white" aria-label={`Edit ${feed.label}`}>
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -106,6 +113,32 @@ export function Settings({ open, onClose }: SettingsProps) {
                       </button>
                     </div>
                   )}
+                  {expandedId === feed.id && editingId !== feed.id ? (
+                    <div className="mt-4 grid gap-3 border-t border-feed-border pt-3 text-sm">
+                      <label className="flex items-center justify-between gap-3 text-zinc-300">
+                        <span>Show images</span>
+                        <input type="checkbox" checked={feed.showImages} onChange={(event) => updateFeed(feed.id, { showImages: event.target.checked })} className="h-4 w-4 accent-violet-600" />
+                      </label>
+                      <label className="grid gap-1 text-zinc-300">
+                        <span>Articles per source</span>
+                        <input type="number" min={1} max={50} value={feed.articleLimit} onChange={(event) => updateFeed(feed.id, { articleLimit: clampNumber(event.target.value, 1, 50) })} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-violet-500" />
+                      </label>
+                      <label className="grid gap-1 text-zinc-300">
+                        <span>Refresh interval</span>
+                        <select value={feed.refreshInterval} onChange={(event) => updateFeed(feed.id, { refreshInterval: parseInterval(event.target.value) })} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-violet-500">
+                          <option value="5">5min</option>
+                          <option value="15">15min</option>
+                          <option value="30">30min</option>
+                          <option value="60">1hr</option>
+                          <option value="manual">manual</option>
+                        </select>
+                      </label>
+                      <label className="flex items-center justify-between gap-3 text-zinc-300">
+                        <span>Card accent</span>
+                        <input type="color" value={feed.accentColor} onChange={(event) => updateFeed(feed.id, { accentColor: event.target.value })} className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-zinc-950" />
+                      </label>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -123,8 +156,47 @@ export function Settings({ open, onClose }: SettingsProps) {
               </button>
             </form>
           </section>
+
+          <section className="mt-6">
+            <h3 className="text-sm font-semibold text-zinc-200">Global Settings</h3>
+            <div className="mt-3 space-y-3 rounded-lg border border-feed-border p-3 text-sm">
+              <label className="flex items-center justify-between gap-3 text-zinc-300">
+                <span>Light mode</span>
+                <input type="checkbox" checked={settings.theme === 'light'} onChange={(event) => updateSettings({ theme: event.target.checked ? 'light' : 'dark' })} className="h-4 w-4 accent-violet-600" />
+              </label>
+              <label className="grid gap-1 text-zinc-300">
+                <span>Density</span>
+                <select value={settings.density} onChange={(event) => updateSettings({ density: event.target.value === 'compact' ? 'compact' : 'comfortable' })} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-violet-500">
+                  <option value="comfortable">Comfortable</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-zinc-300">
+                <span>Default articles per source</span>
+                <input type="number" min={1} max={50} value={settings.defaultArticleLimit} onChange={(event) => updateSettings({ defaultArticleLimit: clampNumber(event.target.value, 1, 50) })} className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-violet-500" />
+              </label>
+            </div>
+          </section>
         </div>
       </aside>
     </div>
   );
+}
+
+function clampNumber(value: string, min: number, max: number): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return min;
+  }
+
+  return Math.min(Math.max(parsed, min), max);
+}
+
+function parseInterval(value: string): RefreshInterval {
+  if (value === 'manual') {
+    return 'manual';
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return parsed === 5 || parsed === 15 || parsed === 30 || parsed === 60 ? parsed : 15;
 }
