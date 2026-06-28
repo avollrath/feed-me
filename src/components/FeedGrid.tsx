@@ -4,7 +4,11 @@ import { FeedCard } from './FeedCard';
 import { useFeedStore } from '../store/feedStore';
 import type { FeedSource } from '../types';
 
-export function FeedGrid() {
+type FeedGridProps = {
+  onRefreshFeed: (feed: FeedSource) => void;
+};
+
+export function FeedGrid({ onRefreshFeed }: FeedGridProps) {
   const feeds = useFeedStore((state) => state.feeds);
   const layout = useFeedStore((state) => state.layout);
   const setLayout = useFeedStore((state) => state.setLayout);
@@ -35,10 +39,6 @@ export function FeedGrid() {
     }
   }
 
-  function handleRefresh(_feed: FeedSource) {
-    return undefined;
-  }
-
   return (
     <div ref={containerRef} className="mx-auto max-w-7xl px-2 py-4 md:px-4">
       {mounted ? (
@@ -53,7 +53,7 @@ export function FeedGrid() {
         >
           {enabledFeeds.map((feed) => (
             <div key={feed.id}>
-              <FeedCard feed={feed} columns={activeLayout.find((item) => item.i === feed.id)?.w ?? 4} onRefresh={handleRefresh} />
+              <FeedCard feed={feed} columns={activeLayout.find((item) => item.i === feed.id)?.w ?? 4} onRefresh={onRefreshFeed} />
             </div>
           ))}
         </GridLayout>
