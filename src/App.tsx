@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FeedGrid } from './components/FeedGrid';
 import { Header } from './components/Header';
+import { Settings } from './components/Settings';
 import { useFeedStore } from './store/feedStore';
 
 function App() {
@@ -15,13 +16,7 @@ function App() {
       <main>
         <FeedGrid />
       </main>
-      {settingsOpen ? (
-        <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setSettingsOpen(false)}>
-          <aside className="ml-auto h-full w-full max-w-md border-l border-feed-border bg-feed-card p-5" onClick={(event) => event.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white">Settings</h2>
-          </aside>
-        </div>
-      ) : null}
+      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
