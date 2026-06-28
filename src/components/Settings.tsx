@@ -33,7 +33,7 @@ export function Settings({ open, onClose }: SettingsProps) {
       const response = await fetch(`/api/validate?url=${encodeURIComponent(url)}`);
       const result = (await response.json()) as { valid?: boolean };
 
-      if (!result.valid) {
+      if (!response.ok || !result.valid) {
         setError('Feed URL did not validate.');
         return;
       }

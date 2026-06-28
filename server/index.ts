@@ -21,7 +21,6 @@ const parser = new Parser<Record<string, unknown>, ParserItem>({
   customFields: {
     item: ['media:content', 'media:thumbnail', 'content:encoded', 'creator'],
   },
-  timeout: 12000,
 });
 
 app.use(
@@ -40,7 +39,7 @@ app.get('/api/feed', async (req, res) => {
   }
 
   try {
-    const feed = await parser.parseURL(url.toString());
+    const feed = await parseFeed(url);
     res.json({
       title: feed.title ?? url.hostname,
       description: stripHtml(feed.description ?? '').slice(0, 300),
@@ -69,7 +68,7 @@ app.get('/api/validate', async (req, res) => {
   }
 
   try {
-    const feed = await parser.parseURL(url.toString());
+    const feed = await parseFeed(url);
     res.json({ valid: Boolean(feed.title || feed.items.length) });
   } catch {
     res.json({ valid: false });
@@ -102,6 +101,30 @@ function parseLimit(value: unknown): number {
   return Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 50) : 10;
 }
 
+async function parseFeed(url: URL) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+        'user-agent': 'FeedMeRSSReader/1.0 (+https://github.com/avollrath/feed-me)',
+      },
+      redirect: 'follow',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Feed responded with ${response.status}`);
+    }
+
+    return parser.parseString(await response.text());
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function normalizeDate(value?: string): string | null {
   if (!value) {
     return null;
@@ -112,7 +135,7 @@ function normalizeDate(value?: string): string | null {
 }
 
 function extractImage(item: ParserItem): string | null {
-  if (item.enclosure?.url && item.enclosure.type?.startsWith('image/')) {
+  if (item.enclosure?.url && (!item.enclosure.type || item.enclosure.type.startsWith('image/'))) {
     return item.enclosure.url;
   }
 
@@ -126,19 +149,26 @@ function extractImage(item: ParserItem): string | null {
     return mediaThumbnail;
   }
 
-  const html = item.content ?? item['content:encoded'] ?? '';
-  const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  const html = item.content ?? item['content:encoded'] ?? item.contentSnippet ?? '';
+  const ogImage = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i);
   if (ogImage?.[1]) {
-    return ogImage[1];
+    return decodeHtml(ogImage[1]);
   }
 
   const img = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return img?.[1] ?? null;
+  return img?.[1] ? decodeHtml(img[1]) : null;
 }
 
 function getMediaUrl(value: MediaValue | undefined): string | null {
-  const media = Array.isArray(value) ? value[0] : value;
-  return media?.$?.url ?? media?.url ?? null;
+  const entries = Array.isArray(value) ? value : value ? [value] : [];
+  for (const media of entries) {
+    const url = media?.$?.url ?? media?.url;
+    if (url) {
+      return decodeHtml(url);
+    }
+  }
+
+  return null;
 }
 
 function stripHtml(value: string): string {
@@ -148,4 +178,8 @@ function stripHtml(value: string): string {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function decodeHtml(value: string): string {
+  return value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
